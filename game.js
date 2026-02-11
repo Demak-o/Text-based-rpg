@@ -37,6 +37,68 @@ function popMenu() {
 }
 
 // -------------------------
+// VARRICK SHOP
+// -------------------------
+
+function openVarrickShop(page = 0) {
+  const tier = Math.min(2, state.player.varrickQuestsDone);
+  const tierText = ["No discount", "Discount (1 quest)", "Big discount (2 quests)"][tier];
+
+  const itemsForSale = [
+    "potion_small",
+    "potion_big",
+    "tonic_swiftness",
+    "tonic_strength",
+    "tonic_ironhide"
+  ];
+
+  const perPage = 3;
+  const start = page * perPage;
+  const slice = itemsForSale.slice(start, start + perPage);
+
+  const actions = slice.map((key) => {
+    const item = ITEM_EFFECTS[key];
+    const price = getPrice(key);
+    const label = `${item.name} - ${price}g` + (item.desc ? ` (${item.desc})` : "");
+    return { text: label, fn: () => buyItem(key, page) };
+  });
+
+  const hasNext = start + perPage < itemsForSale.length;
+  if (hasNext) actions.push({ text: "Next", fn: () => openVarrickShop(page + 1) });
+  else actions.push({ text: "Back", fn: () => popMenu() });
+
+  pushMenu(
+    `Dr. Varrick's Supplies\nGold: ${state.player.gold}\n${tierText}\n\nHealing potions work instantly.\nTonics last 3 turns in combat.`,
+    actions
+  );
+}
+
+function buyItem(itemKey, page = 0) {
+  const price = getPrice(itemKey);
+  const item = ITEM_EFFECTS[itemKey];
+
+  if (state.player.gold < price) {
+    popMenu();
+    storyText.textContent = `"Not enough gold," Varrick rasps. "Come back when you can afford medicine."`;
+    clearButtons();
+    setButton(0, "Back to shop", () => openVarrickShop(page));
+    setButton(1, "Return", () => loadScene(state.scene));
+    updateHUD();
+    return;
+  }
+
+  state.player.gold -= price;
+  state.player.inventory[itemKey] = (state.player.inventory[itemKey] || 0) + 1;
+
+  popMenu();
+  storyText.textContent = `You bought: ${item.name}\nGold left: ${state.player.gold}`;
+  clearButtons();
+  setButton(0, "Buy more", () => openVarrickShop(page));
+  setButton(1, "Return", () => loadScene(state.scene));
+  updateHUD();
+}
+
+// -------------------------
 // STORY MODE
 // -------------------------
 
@@ -67,6 +129,11 @@ function loadScene(sceneKey) {
 
   for (let i = 0; i < Math.min(choices.length, 4); i++) {
     setButton(i, choices[i].text, () => loadScene(choices[i].next));
+  }
+
+  // Show Varrick shop button if the scene allows it or you've met him
+  if (sceneData.shop === "varrick" || state.player.hasMetVarrick) {
+    setButton(3, "Visit Dr. Varrick (Shop)", () => openVarrickShop(0));
   }
 
   updateHUD();
@@ -107,6 +174,7 @@ function attemptRunFromEncounter() {
     clearButtons();
     setButton(0, "Restart", () => {
       state.player.hp = state.player.maxHP;
+      state.player.gold = 15;
       state.combat = null;
       state.encounter = null;
       state.menuStack = [];
@@ -159,6 +227,7 @@ function renderCombat(extraText = "") {
     clearButtons();
     setButton(0, "Restart", () => {
       state.player.hp = state.player.maxHP;
+      state.player.gold = 15;
       state.combat = null;
       state.menuStack = [];
       loadScene("start");
@@ -178,19 +247,14 @@ function openAttackMenu() {
 function openItemMenu() {
   const inv = state.player.inventory;
 
-  const actions = [];
+  const keys = Object.keys(inv).filter(k => (inv[k] || 0) > 0);
 
-  if ((inv.potion_small || 0) > 0) {
-    actions.push({ text: "Small Potion (+10 HP)", fn: () => useItem("potion_small") });
-  }
-  if ((inv.potion_big || 0) > 0) {
-    actions.push({ text: "Big Potion (+20 HP)", fn: () => useItem("potion_big") });
-  }
+  const actions = keys.slice(0, 3).map((key) => {
+    const item = ITEM_EFFECTS[key];
+    return { text: `${item.name} x${inv[key]}`, fn: () => useItem(key) };
+  });
 
-  if (actions.length === 0) {
-    actions.push({ text: "(No items)", fn: () => popMenu() });
-  }
-
+  if (actions.length === 0) actions.push({ text: "(No items)", fn: () => popMenu() });
   actions.push({ text: "Back", fn: () => popMenu() });
 
   pushMenu("Choose an item:", actions);
@@ -207,11 +271,25 @@ function useItem(itemKey) {
   }
 
   p.inventory[itemKey] -= 1;
-  p.hp = clamp(p.hp + item.heal, 0, p.maxHP);
+
+  if (item.type === "heal") {
+    p.hp = clamp(p.hp + item.heal, 0, p.maxHP);
+    popMenu();
+    state.combat.log.push(`You used ${item.name} and healed ${item.heal} HP.`);
+    enemyTurn();
+    return;
+  }
+
+  if (item.type === "buff") {
+    p.buffs[item.buff] = Math.max(p.buffs[item.buff], item.turns);
+    popMenu();
+    state.combat.log.push(`You used ${item.name}.`);
+    enemyTurn();
+    return;
+  }
 
   popMenu();
-  state.combat.log.push(`You used a ${item.name} and healed ${item.heal} HP.`);
-  enemyTurn();
+  renderCombat("That item does not seem to do anything.");
 }
 
 function playerAttack(target) {
@@ -221,9 +299,7 @@ function playerAttack(target) {
   const { dmg, isCrit } = calcPlayerDamage(target);
 
   state.combat.enemyHP = clamp(state.combat.enemyHP - dmg, 0, e.maxHP);
-  state.combat.log.push(
-    `You strike the ${target} for ${dmg} damage${isCrit ? " (CRIT)" : ""}.`
-  );
+  state.combat.log.push(`You strike the ${target} for ${dmg} damage${isCrit ? " (CRIT)" : ""}.`);
 
   if (state.combat.enemyHP <= 0) {
     winCombat();
@@ -256,8 +332,7 @@ function attemptFlee() {
   const chance = fleeChance();
 
   if (roll(chance)) {
-    storyText.textContent =
-      `You wait for the right moment...\n\nThen bolt.\n\nYou escaped the ${e.name}.`;
+    storyText.textContent = `You wait for the right moment...\n\nThen bolt.\n\nYou escaped the ${e.name}.`;
     clearButtons();
     setButton(0, "Continue", () => endCombatToStory(false));
     state.combat = null;
@@ -270,21 +345,22 @@ function attemptFlee() {
 }
 
 function enemyTurn() {
+  tickBuffs();
+
   const e = ENEMIES[state.combat.enemyKey];
-
   const { dmg, isCrit } = enemyAttack();
-  state.combat.log.push(
-    `${e.name} hits you for ${dmg}${isCrit ? " (CRIT)" : ""}.`
-  );
 
+  state.combat.log.push(`${e.name} hits you for ${dmg}${isCrit ? " (CRIT)" : ""}.`);
   renderCombat();
 }
 
 function winCombat() {
   const e = ENEMIES[state.combat.enemyKey];
 
-  storyText.textContent =
-    `You defeated the ${e.name}.\n\nYou gained ${e.xp} XP.`;
+  const goldGain = 5 + Math.floor(Math.random() * 6);
+  state.player.gold += goldGain;
+
+  storyText.textContent = `You defeated the ${e.name}.\n\nYou gained ${e.xp} XP and found ${goldGain} gold.`;
   giveXP(e.xp);
 
   clearButtons();
@@ -321,8 +397,6 @@ function render() {
     renderSubmenu();
   } else if (state.mode === "combat") {
     renderCombat();
-  } else if (state.mode === "encounter") {
-    updateHUD();
   } else {
     updateHUD();
   }
