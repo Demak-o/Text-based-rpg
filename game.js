@@ -53,11 +53,8 @@ function loadScene(sceneKey) {
   state.scene = sceneKey;
   state.mode = "story";
 
-  // optional hook
   if (typeof sceneData.onEnter === "function") sceneData.onEnter();
 
-  // optional encounter trigger
-  // sceneData.encounter = { enemyKey: "wolf" }
   if (sceneData.encounter && sceneData.encounter.enemyKey) {
     startEncounter(sceneData.encounter.enemyKey, sceneKey, sceneData.text);
     return;
@@ -68,7 +65,6 @@ function loadScene(sceneKey) {
   const choices = sceneData.choices || [];
   clearButtons();
 
-  // still supports 0/1/2 choices, but can also support 3/4 if you ever want
   for (let i = 0; i < Math.min(choices.length, 4); i++) {
     setButton(i, choices[i].text, () => loadScene(choices[i].next));
   }
@@ -85,7 +81,7 @@ function startEncounter(enemyKey, returnScene, introText) {
   state.encounter = { enemyKey, returnScene };
 
   const e = ENEMIES[enemyKey];
-  storyText.textContent = `${introText}\n\n⚠ Encounter: ${e.name} appears!`;
+  storyText.textContent = `${introText}\n\nEncounter: ${e.name} appears.`;
 
   clearButtons();
   setButton(0, "Run", () => attemptRunFromEncounter());
@@ -98,17 +94,14 @@ function attemptRunFromEncounter() {
   const enemyKey = state.encounter.enemyKey;
   const e = ENEMIES[enemyKey];
 
-  // Run from encounter = chance-based, fail = death (as you requested)
-  // tweak this any time:
   const chance = 0.55;
 
   if (roll(chance)) {
-    storyText.textContent = `You RUN like your life depends on it...\n\nBecause it does.\n\nYou escape the ${e.name}.`;
+    storyText.textContent = `You run like your life depends on it.\n\nYou escape the ${e.name}.`;
     clearButtons();
-    setButton(0, "Catch your breath", () => loadScene(state.encounter.returnScene));
+    setButton(0, "Continue", () => loadScene(state.encounter.returnScene));
     state.encounter = null;
   } else {
-    // funny death message
     storyText.textContent =
       `You attempt to run...\n\nYour foot catches on absolutely nothing.\nYou do a perfect faceplant.\n\nThe ${e.name} does not forgive.\n\n(You died. Skill issue.)`;
     clearButtons();
@@ -149,7 +142,7 @@ function renderCombat(extraText = "") {
   const logTail = state.combat.log.slice(-3).join("\n");
   storyText.textContent =
     `${extraText}${extraText ? "\n\n" : ""}` +
-    `⚔ Combat vs ${e.name}\n\n` +
+    `Combat vs ${e.name}\n\n` +
     `${logTail}`;
 
   clearButtons();
@@ -160,7 +153,6 @@ function renderCombat(extraText = "") {
 
   updateHUD();
 
-  // if player died, stop
   if (p.hp <= 0) {
     storyText.textContent =
       `You fought bravely.\n\nYou also lost.\n\n(You died.)`;
@@ -230,7 +222,7 @@ function playerAttack(target) {
 
   state.combat.enemyHP = clamp(state.combat.enemyHP - dmg, 0, e.maxHP);
   state.combat.log.push(
-    `You strike the ${target} for ${dmg} damage${isCrit ? " (CRIT!)" : ""}.`
+    `You strike the ${target} for ${dmg} damage${isCrit ? " (CRIT)" : ""}.`
   );
 
   if (state.combat.enemyHP <= 0) {
@@ -247,7 +239,7 @@ function attemptBefriend() {
 
   if (roll(chance)) {
     storyText.textContent =
-      `You lower your guard.\n\nThe ${e.name} hesitates...\n\nThen calms.\n\n✅ You befriended it.\n(For now.)`;
+      `You lower your guard.\n\nThe ${e.name} hesitates...\n\nThen calms.\n\nYou befriended it.\n(For now.)`;
     clearButtons();
     setButton(0, "Continue", () => endCombatToStory(true));
     state.combat = null;
@@ -265,7 +257,7 @@ function attemptFlee() {
 
   if (roll(chance)) {
     storyText.textContent =
-      `You wait for the right moment...\n\nThen BOLT.\n\n✅ You escaped the ${e.name}.`;
+      `You wait for the right moment...\n\nThen bolt.\n\nYou escaped the ${e.name}.`;
     clearButtons();
     setButton(0, "Continue", () => endCombatToStory(false));
     state.combat = null;
@@ -282,7 +274,7 @@ function enemyTurn() {
 
   const { dmg, isCrit } = enemyAttack();
   state.combat.log.push(
-    `${e.name} hits you for ${dmg}${isCrit ? " (CRIT!)" : ""}.`
+    `${e.name} hits you for ${dmg}${isCrit ? " (CRIT)" : ""}.`
   );
 
   renderCombat();
@@ -292,7 +284,7 @@ function winCombat() {
   const e = ENEMIES[state.combat.enemyKey];
 
   storyText.textContent =
-    `✅ You defeated the ${e.name}.\n\nYou gained ${e.xp} XP.`;
+    `You defeated the ${e.name}.\n\nYou gained ${e.xp} XP.`;
   giveXP(e.xp);
 
   clearButtons();
@@ -304,8 +296,6 @@ function winCombat() {
 }
 
 function endCombatToStory(befriended) {
-  // for now, just return to the same scene
-  // later we can branch: befriended enemies give rewards, etc.
   loadScene(state.scene);
 }
 
@@ -332,13 +322,10 @@ function render() {
   } else if (state.mode === "combat") {
     renderCombat();
   } else if (state.mode === "encounter") {
-    // encounter render handled by startEncounter
     updateHUD();
   } else {
-    // story render handled by loadScene
     updateHUD();
   }
 }
 
-// boot
 loadScene("start");
