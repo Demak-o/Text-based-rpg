@@ -2,22 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Text Adventure</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <div class="game-container">
+    <div id="hud">
+      <div id="player-stats"></div>
+      <div id="enemy-stats"></div>
+    </div>
+
     <div id="story-text"></div>
 
     <div class="choices">
-      <button id="choice1"></button>
-      <button id="choice2"></button>
+      <button id="choice1" type="button"></button>
+      <button id="choice2" type="button"></button>
+      <button id="choice3" type="button"></button>
+      <button id="choice4" type="button"></button>
     </div>
   </div>
 
+  <script src="systems.js"></script>
   <script src="story.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
-
