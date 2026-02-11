@@ -14,6 +14,14 @@ const story = {
       
     ]
   },
+  ref: {
+    text: "I havent done this go back atm",
+    choices: [
+      { text: " go back", next: "start" }
+      ]
+
+  
+  },
 
   down: {
     text: " You travel down the road passing by multiple shops selling various goods from accross the lands, silks and different wears paired with the smell of street food nourish your brain, as you look to your right you see a smaller sign on the front of what looks like an old hospital, its front face is worn down by age and weather.",
