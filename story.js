@@ -71,7 +71,10 @@ const story = {
   },
 
   academy_pass3: {
-    text: "The book opens gently.\n\nWords form on the page:\n\n'Attention. Discipline. And sacrifice — small at first, then greater.'\n\nGandolf steps closer, studying you like a puzzle.\n\n'You asked the right question,' he says quietly.\n\nHe extends a hand.\n\n'If you wish it… you may become my apprentice. But understand: once you step onto this path, you will never see the world the same way again.'\n\n(END OF MAGIC PATH — you’re about to learn magic.)",
+    text: "The book opens gently.\n\nWords form on the page:\n\n'Attention. Discipline. And sacrifice — small at first, then greater.'\n\nGandolf steps closer, studying you like a puzzle.\n\n'You asked the right question,' he says quietly.\n\nHe extends a hand.\n\n'If you wish it… you may become my apprentice.'\n\nHe places a small crystal focus in your palm. It hums softly.\n\n(You gained a weapon: Apprentice Focus.)",
+    onEnter: () => {
+      state.player.weaponKey = "magic";
+    },
     choices: [
       { text: "Return to the start (for now)", next: "start" }
     ]
@@ -128,33 +131,53 @@ const story = {
   },
 
   // -------------------------
-  // WOODS / HUT (can divert to castle)
+  // WOODS / HUT (with an encounter)
   // -------------------------
   woods_path: {
     text: "You head north, leaving the town behind. The road turns to dirt, then to a thin trail. Trees tighten around you like a crowd.\n\nHours pass. The light dims.\n\nYou spot smoke in the distance — a hut. But you also notice fresh claw marks on a nearby tree.\n\nA low growl echoes between the trunks.\n\nDo you go straight to the hut, or follow the claw marks to see what’s stalking the area?",
     choices: [
-      { text: "Go straight to the hut", next: "hut_arrive" },
+      { text: "Go straight to the hut", next: "woods_wolf" },
       { text: "Follow the claw marks", next: "woods_detour" }
+    ]
+  },
+
+  woods_wolf: {
+    text: "You push forward toward the smoke.\n\nA shape slips between the trees.\n\nSomething hungry watches you.",
+    encounter: { enemyKey: "wolf" },
+    choices: [
+      { text: "After the encounter, continue", next: "hut_arrive" }
     ]
   },
 
   woods_detour: {
     text: "You follow the claw marks deeper into the trees.\n\nThe forest goes unnaturally quiet.\n\nYou find a half-buried stone marker — old, cracked, and carved with the same shifting symbols you saw near the Academy.\n\nBeyond it, the ground slopes down into mist.\n\nYou realise too late: this isn’t just a forest trail.\n\nIt’s a path leading east… toward ruined stone towers barely visible through the fog.\n\nYou’ve accidentally found a hidden route to the Abandoned Castle.",
     choices: [
-      { text: "Turn back and go to the hut", next: "hut_arrive" },
+      { text: "Turn back and go to the hut", next: "woods_wolf" },
       { text: "Keep going toward the ruins", next: "castle_arrive" }
     ]
   },
 
   hut_arrive: {
-    text: "You approach the Hunter’s Hut. It’s sturdy, built from dark logs and reinforced with bone charms tied to the doorway.\n\nA figure steps out — cloaked in fur, face half-hidden.\n\nA bow is raised at you.\n\n'Why are you here?' the hunter demands.\n\n(END OF HUT PATH — you’re at the hut, about to get involved.)",
+    text: "You approach the Hunter’s Hut. It’s sturdy, built from dark logs and reinforced with bone charms tied to the doorway.\n\nA figure steps out — cloaked in fur, face half-hidden.\n\nA bow is raised at you.\n\n'Why are you here?' the hunter demands.",
     choices: [
-      { text: "Return to the start (for now)", next: "start" }
+      { text: "Explain Dr. Varrick's request", next: "hut_weapon" },
+      { text: "Back away and leave", next: "start" }
+    ]
+  },
+
+  hut_weapon: {
+    text: "The hunter narrows their eyes at the mention of Moon-Thorn Sap.\n\n'Varrick… figures.'\n\nThey lower the bow slightly and toss you a worn weapon.\n\n'If you’re going to deal with his kind of trouble, you’ll need this.'\n\n(You gained a weapon: Hunter’s Bow.)",
+    onEnter: () => {
+      state.player.weaponKey = "bow";
+      state.player.varrickQuestsDone = Math.min(2, state.player.varrickQuestsDone + 1);
+    },
+    choices: [
+      { text: "Return to town (for now)", next: "start" }
     ]
   },
 
   // -------------------------
-  // CASTLE (can divert to hut)
+  // CASTLE (with an encounter)
   // -------------------------
   castle_path: {
     text: "You travel east. The land becomes rocky and uneven. A cold wind presses against you like a warning.\n\nAt sunset, you see it: the Abandoned Castle, broken towers jutting into the sky like snapped teeth.\n\nThe gates are gone, but the air near the ruins tastes of iron.\n\nA narrow side trail splits off toward the woods — you can still turn back if you want.",
@@ -172,9 +195,22 @@ const story = {
   },
 
   castle_arrive: {
-    text: "You step into the castle ruins.\n\nThe temperature drops instantly.\n\nYour footsteps echo wrong — like the sound comes back a half-second too late.\n\nA broken hallway stretches ahead. On the wall, something has scratched symbols into the stone.\n\nFor a moment, you swear one of the shadows moves *against* the torchlight.\n\n(END OF CASTLE PATH — you’re inside, about to discover what’s here.)",
+    text: "You step into the castle ruins.\n\nThe temperature drops instantly.\n\nYour footsteps echo wrong — like the sound comes back a half-second too late.\n\nA broken hallway stretches ahead. On the wall, something has scratched symbols into the stone.\n\nFor a moment, you swear one of the shadows moves *against* the torchlight.",
+    encounter: { enemyKey: "wisp" },
     choices: [
-      { text: "Return to the start (for now)", next: "start" }
+      { text: "Push deeper into the ruins", next: "castle_weapon" },
+      { text: "Retreat (restart)", next: "start" }
+    ]
+  },
+
+  castle_weapon: {
+    text: "Beyond a collapsed archway you find an old armour stand. Dust coats everything… except the sword.\n\nWhen you touch it, the steel hums — like it remembers being used.\n\nA battered shield rests beside it, still strapped and ready.\n\n(You gained a weapon: Sword & Shield.)",
+    onEnter: () => {
+      state.player.weaponKey = "sword";
+      state.player.varrickQuestsDone = Math.min(2, state.player.varrickQuestsDone + 1);
+    },
+    choices: [
+      { text: "Return to town (for now)", next: "start" }
     ]
   }
 };
