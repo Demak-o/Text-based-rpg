@@ -8,25 +8,36 @@ const story = {
   },
   up: {
     text: "you die lol, cancer or smth.",
-    choices: []
-  },
-
-  down: {
-    text: "A wolf steps into the clearing, staring at you.",
     choices: [
-      { text: "Fight the wolf", next: "fight" },
-      { text: "Slowly back away", next: "run" }
+      { text: "But it refused", next: "ref" }
+
+      
     ]
   },
 
-  run: {
-    text: "You escape safely... for now.",
-    choices: []
+  down: {
+    text: " You travel down the road passing by multiple shops selling various goods from accross the lands, silks and different wears paired with the smell of street food nourish your brain, as you look to your right you see a smaller sign on the front of what looks like an old hospital, its front face is worn down by age and weather.",
+    choices: [
+      { text: "enter the hospital", next: "hosp" },
+      { text: "continue down the road", next: "road" }
+    ]
   },
 
-  fight: {
-    text: "The wolf overpowers you. Game over.",
-    choices: []
+  road: {
+    text: "You start travelign down the road, a deep rumble comes from within your gut; and omnipresence of darks starts flooding you body, the edges of your vision start fading",
+    choices: [
+      { text: "head back to the hospital", next: "hosp"},
+      { text: "ignore the obvious signs your doing the wrong thing", next: "dumb"}
+    ]
+  },
+
+  dumb : {
+    text: "Wow, not so clever now are you, you get cancer and like explode or something idk, maybe you jump off a cliff, maybe your having a schiz episode, anyway you lost lol",
+    choices: [
+      { text: "Restart", next: "start" }
+      
+      
+    ]
   }
 };
 
